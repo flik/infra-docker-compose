@@ -22,10 +22,13 @@ curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
 ```
 
 并根据需要配置国内源。
+And configure domestic sources as needed.
 
 ## 0.2 下载docker-compose
+## 0.2 Download docker-compose
 
 参考[文档](https://docs.docker.com/compose/install/).
+Refer to [documentation] (https://docs.docker.com/compose/install/).
 
 ```
 sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
@@ -33,14 +36,18 @@ sudo chmod +x /usr/local/bin/docker-compose
 ```
 
 ## 0.2 开启IPv4 IP forward（不配置似乎也没事，待验证）
+## 0.2 Turn on IPv4 IP forward (it seems fine without configuration, to be verified)
 
 容器要想访问外部网络，需要本地系统的转发支持。编辑`/etc/sysctl.conf`，添加或修改：
+
+If the container wants to access the external network, it needs the forwarding support of the local system. Edit `/ etc / sysctl.conf`, add or modify:
 
 ```
 net.ipv4.ip_forward=1
 ```
 
 然后重启网络和docker。
+Then restart the network and docker.
 
 ```
 systemctl restart network
@@ -48,27 +55,38 @@ systemctl restart docker
 ```
 
 ## 0.4 挂载目录的SELinux权限
+## 0.4 SELinux permission to mount directory
 
 这一版，容器数据的持久化数据的挂载有限使用命名卷，而不是直接将主机目录挂载到容器里。以便避免权限等问题导致的坑。
 
+In this version, the mounting of persistent data for container data is limited to using named volumes instead of directly mounting the host directory into the container. In order to avoid pits caused by permissions and other issues
+
 如果开启SELinux，并且采用目录挂载挂载的方式，需要配置SELinux权限。如挂载主机目录为`/srv/mysql`，则执行：
+
+If you enable SELinux and use the directory mount method, you need to configure SELinux permissions. If the mount host directory is `/ srv / mysql`, execute:
 
 ```
 chcon -Rt svirt_sandbox_file_t /srv/mysql
 ```
 
 ## 0.4 防火墙方面
+## 0.4 Firewall
 
 **iptables增加端口**
+** iptables add port **
 
 配置iptable规则：`vi /etc/sysconfig/iptables`
 
+Configure iptable rules: `vi / etc / sysconfig / iptables`
+
 ```
 # 增加一行（如增加UDP 123端口）
+# Add a line (such as adding UDP port 123)
 -A INPUT -m state --state NEW -m udp -p udp --dport 123 -j ACCEPT
 ```
 
 **firewalld开通端口**
+** firewalld open port **
 
 ```
 firewall-cmd --zone=public --add-port=80/tcp --permanent
@@ -76,10 +94,14 @@ systemctl restart firewalld
 ```
 
 # 1 部署节点
+# 1 deploy node
 
 ## 1.1 研发内网域名解析
+## 1.1 R & D intranet domain name resolution
 
 研发内用的DNS有dnsmasq来提供，由nginx进行反向代理。DNS的docker-compose.yml如下：
+
+DNS used in research and development is provided by dnsmasq, and reverse proxy is performed by nginx. The docker-compose.yml of DNS is as follows:
 
 ```
 services:
@@ -103,18 +125,26 @@ services:
 
 容器的三个配置文件通过volume的方式与主机当前目录下的配置文件共享。
 
+The three configuration files of the container are shared with the configuration files in the current directory of the host through volume.
+
 DNS服务使用的是dnsmasq。其中，
 
+The DNS service uses dnsmasq. among them,
+
 * `/etc/dnsmasq.conf`是主配置文件，主要内容有两行：
+* `/ etc / dnsmasq.conf` is the main configuration file, with two main lines:
 
 ```
 # 指定配置外网DNS地址的resolv文件
+# Specify the resolv file for configuring the DNS address of the external network
 resolv-file=/etc/resolv.dnsmasq
 # 指定配置内网域名解析关系的文件
+# Specify the file to configure the intranet domain name resolution relationship
 addn-hosts=/etc/dnsmasq.hosts
 ```
 
 * `/etc/resolv.dnsmasq`，配置外网DNS地址，内容如下：
+* `/ etc / resolv.dnsmasq`, configure the external network DNS address, the content is as follows:
 
 ```
 nameserver 114.114.114.114
@@ -122,6 +152,7 @@ nameserver 202.106.0.20
 ```
 
 * `/etc/dnsmasq.hosts`，配置内网域名解析，内容如下：
+* `/ etc / dnsmasq.hosts`, configure intranet domain name resolution, the content is as follows:
 
 ```
 # ops
@@ -138,8 +169,11 @@ nameserver 202.106.0.20
 
 
 ## 1.2 反向代理
+## 1.2 Reverse proxy
 
 平台由多个组件构成，涉及多个不同的IP和端口号，为了方便记忆，采用域名+反向代理的配置方式。反向代理用Nginx提供，`docker-compose.yml`如下：
+
+The platform consists of multiple components, involving multiple different IPs and port numbers. In order to facilitate memory, the configuration method of domain name + reverse proxy is adopted. The reverse proxy is provided by Nginx.
 
 ```
 services:
@@ -162,12 +196,20 @@ services:
 ```
 
 1. 所有的反向代理配置放在`conf.d`目录下，随着下面各个组件的介绍会继续补充；
+1. All reverse proxy configurations are placed in the `conf.d` directory, and will continue to be supplemented with the introduction of the following components;
+
 2. 静态页面放在`www`目录下；
+2. Static pages are placed under the `www` directory;
+
 3. 证书放在`ssl`下。
+3. The certificate is placed under `ssl`.
 
 ## 1.3 LDAP
 
 LDAP使用OpenLDAP进行维护，使用phpldapadmin管理界面。这一版的LDAP增加了SSL支持，因此需要提供证书。docker-compose.yml如下：
+
+LDAP uses OpenLDAP for maintenance and phpldapadmin management interface. This version of LDAP adds SSL support, so certificates are required. docker-compose.yml is as follows:
+
 
 ```
 services:
