@@ -270,10 +270,12 @@ services:
 ```
 
 1. 证书文件通过卷挂载，并使用环境变量进行指定。
+1. The certificate file is mounted by volume and specified using environment variables.
 
 ## 1.4 JIRA & Confluence
 
 以Jira为例，docker-compose.yml如下：
+Taking Jira as an example, docker-compose.yml is as follows:
 
 ```
 version: '3'
@@ -320,8 +322,13 @@ services:
 ```
 
 1. 启动MySQL的时候即初始化好数据库和用户；
+1. The database and user are initialized when starting MySQL;
+
 2. Jira前方经过反向代理，而反向代理配置了SSL；
+2. Jira passes the reverse proxy in front, and the reverse proxy is configured with SSL;
+
 3. Jira对数据库有编码的要求，`./mysql/mysqld_jira.cnf`中可见：
+3. Jira has encoding requirements for the database, which can be seen in `. / Mysql / mysqld_jira.cnf`:
 
 ```
 [client]
@@ -337,12 +344,15 @@ collation-server = utf8mb4_bin
 ```
 
 > [Jira和Confluence的破解方法](https://blog.csdn.net/get_set/article/details/80856922)，仅用于学习，企业用户请购买正版。
+> [Jira and Confluence's cracking method] (https://blog.csdn.net/get_set/article/details/80856922), only for learning, enterprise users please purchase genuine.
 
 ## 1.5 Gitlab
 
 ### 1.5.1 让出22端口
+### 1.5.1 Give up port 22
 
 注意，由于gitlab的SSH默认使用的是22端口，因此主机的sshd建议修改为其他端口。编辑`/etc/ssh/sshd_config`增加2222端口：
+Note that since gitlab's SSH uses port 22 by default, it is recommended to modify the host's sshd to another port. Edit `/ etc / ssh / sshd_config` to add port 2222:
 
 ```
 #Port 22
@@ -350,12 +360,14 @@ Port 2222
 ```
 
 然后执行如下命令为SELinux开启2222端口：
+Then execute the following command to open port 2222 for SELinux:
 
 ```
 semanage port -a -t ssh_port_t -p tcp 2222
 ```
 
 然后执行如下命令让防火墙通过2222端口：
+Then execute the following command to let the firewall pass through port 2222:
 
 ```
 firewall-cmd --permanent --add-port=2222/tcp
@@ -363,8 +375,10 @@ systemctl restart firewalld.service
 ```
 
 ### 1.5.2 启动gitlab
+### 1.5.2 Start gitlab
 
 使用gitlab官方docker镜像，docker-compose.yml文件如下：
+Using the official docker image of gitlab, the docker-compose.yml file is as follows:
 
 ```
 services:
@@ -395,18 +409,23 @@ services:
 ```
 
 1. 由于gitlab前方有支持SSL的反向代理，external_url为用户使用的地址；此处`GITLAB_OMNIBUS_CONFIG`环境变量可用于提前给出任意`gitlab.rb`中的配置。
+1. Because there is a reverse proxy that supports SSL in front of gitlab, external_url is the address used by the user; here the `GITLAB_OMNIBUS_CONFIG` environment variable can be used to give any configuration in` gitlab.rb` in advance.
 
 挂载目录如下：
+The mounting directory is as follows:
 
 | 主机目录 | 容器目录 | 内容 |
+| Host Directory | Container Directory | Content |
 | --- | --- | --- |
-| gitlab-data | /var/opt/gitlab | 应用数据 |
-| gitlab-logs | /var/log/gitlab | 日志 |
-| gitlab-config | /etc/gitlab | GitLab配置文件 |
+| gitlab-data | /var/opt/gitlab | 应用数据 Application data |
+| gitlab-logs | /var/log/gitlab | 日志 Log |
+| gitlab-config | /etc/gitlab | GitLab 配置文件  GitLab Configuration file |
 
 ### 1.5.3 gitlab与LDAP的集成
+### 1.5.3 Integration of gitlab and LDAP
 
 由于配置文件已经共享到宿主机，因此可以通过编辑`gitlab-config`卷中的`gitlab.rb`配置gitlab：
+Since the configuration file has been shared to the host machine, you can configure gitlab by editing `gitlab.rb` in the` gitlab-config` volume:
 
 ```
 ###! **remember to close this block with 'EOS' below**
@@ -434,6 +453,7 @@ EOS
 ```
 
 然后执行如下命令使gitlab配置生效：
+Then execute the following command to make the gitlab configuration take effect:
 
 ```
 docker exec -it gitlab gitlab-ctl reconfigure
@@ -443,15 +463,28 @@ docker exec -it gitlab gitlab-ctl reconfigure
 
 Sonarqube没有太多可解释的，与Jira或Confluence类似，就是典型的一个数据库+一个应用的部署方式，数据库启动时自动创建database和相应的用户的密码；SonarQube为官方镜像。
 
+Sonarqube does not have much to explain, similar to Jira or Confluence, it is a typical one database + one application deployment method, the database and the corresponding user password are automatically created when the database starts; SonarQube is the official mirror.
+
+
 SonarQube中用到的插件可以到[SonarQube插件库](https://docs.sonarqube.org/display/PLUG/Plugin+Library)下载，并复制到`sonar-extensions`卷的`plugins`目录下，并重启使其生效。
+
+The plugins used in SonarQube can be downloaded from [SonarQube Plugin Library] (https://docs.sonarqube.org/display/PLUG/Plugin+Library) and copied to the `plugins` directory of the` sonar-extensions` volume, And restart to make it effective.
+
 
 ## 1.7 Nexus
 
 仍然采用容器的部署方式，采用官方镜像`sonatype/nexus3`。
 
+The container deployment method is still used, and the official image `sonatype / nexus3` is used.
+
 使用`nginx`进行反向代理，将不同的域名映射到不同的nexus端口或路径。
 
+Use `nginx` for reverse proxy to map different domain names to different nexus ports or paths.
+
+
 因此`docker-compose.yml`文件内容如下：
+
+Therefore, the contents of the `docker-compose.yml` file are as follows:
 
 ```
 services:
@@ -480,16 +513,28 @@ services:
 ```
 
 ## 1.8 上网代理
+## 1.8 Internet proxy
 
 由于研发人员经常需要上Google，或查询各种技术官网资料，因此一个统一的上网代理还是有必要的。
+Because R & D personnel often need to go to Google or query various technical official website information, a unified online agent is still necessary.
 
 这里使用SOCKS5来做外网的代理，支持PAC模式和全局代理模式。
+Here SOCKS5 is used as a proxy for the external network, supporting PAC mode and global proxy mode.
 
 1. 代理使用sslocal，代理服务器的配置通过json文件传给该命令，端口为1080；
+1. The proxy uses sslocal, the configuration of the proxy server is passed to the command through a json file, and the port is 1080;
+
 2. sslocal的代理为socks协议，因此使用privoxy转为http协议，端口为8118，该代理地址可用于全局代理模式的配置；
+2. The proxy of sslocal is socks protocol, so use privoxy to switch to http protocol, the port is 8118, the proxy address can be used to configure the global proxy mode;
+
 3. PAC代理模式维护一个list，只有list中的网址是走代理的，通过一个pac文件来维护，同时指定了SOCKS代理的地址，将该pac文件用http服务提供出来，使用者直接配置该pac文件的http地址即可使用PAC方式上网。
+3. The PAC proxy mode maintains a list. Only the URLs in the list are proxied. It is maintained through a pac file. At the same time, the address of the SOCKS proxy is specified. The pac file is provided using the http service. The http address of the file can be accessed online using the PAC method.
+
 
 以上，第1,2由`sgrio/alpine-sslocalproxy`容器提供；第3条就起一个`httpd`容器，将pac文件用http访问即可。docker-compose.yml如下：
+
+Above, the first and second are provided by the `sgrio / alpine-sslocalproxy` container; the third is a` httpd` container, and the pac file can be accessed with http. docker-compose.yml is as follows:
+
 
 ```
 services:
@@ -508,12 +553,19 @@ services:
 ```
 
 1. 代理服务器的配置通过volume挂载[`ss-client.json`]()文件实现。
+1. The configuration of the proxy server is achieved by mounting the [`ss-client.json`] () file in the volume.
 
 ### PAC的支持
+### PAC support
 
 pac的内容放在`nginx/www/pac`中通过挂载到nginx的目录下，从而可以直接通过地址`proxy.example.com/pac`访问。
 
+The content of pac is placed in `nginx / www / pac` by mounting to the nginx directory, so that it can be accessed directly through the address` proxy.example.com / pac`.
+
 pac的生成通过[`gen-pac.sh`](http://gitlab.example.com/infra/infra-docker-compose/blob/master/infra/gen-pac.sh)命令生成，该命令会从`gfwlist`拉取一份常用的代理网站地址list，另外还会加上`whitelist`中自定义的list，生成pac文件`index.html`。
+
+The generation of pac is generated through the [`gen-pac.sh`] (http://gitlab.example.com/infra/infra-docker-compose/blob/master/infra/gen-pac.sh) command, which will Pull a list of common proxy website addresses from `gfwlist`, and add the custom list in` whitelist` to generate a pac file `index.html`.
+
 
 > 代码中的代理配置信息（`infra/ss-client.json`）无效。
 
