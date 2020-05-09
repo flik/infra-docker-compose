@@ -1,16 +1,21 @@
 [TOC]
 
 目前的方案主要是围绕Gitlab及其自带的gitlab-runner在搭建，如图。
+The current solution is mainly built around Gitlab and its own gitlab-runner, as shown in the figure.
 
 ![](https://tva1.sinaimg.cn/large/006tNbRwly1gaia7y8na7j31f60nijwo.jpg)
 
 如果要查看基于Gerrit和Jenkins的部署方式，请切换到v0.1分支（其中各组件版本可能有点旧了，请自行使用镜像最新版本的镜像）。
+If you want to view the deployment method based on Gerrit and Jenkins, please switch to the v0.1 branch (the component versions may be a bit old, please use the latest version of the image yourself)
 
 以下工具基于 Docker & Docker Compose 来部署，其中的配置全部基于“example.com”，具体部署前可根据实际情况进行批量替换。
+The following tools are deployed based on Docker & Docker Compose, the configuration of which is all based on "example.com", and can be replaced in batches according to the actual situation before specific deployment.
 
 # 0 准备
+# 0 ready
 
 ## 0.1 安装docker
+## 0.1 Install docker
 
 ```
 curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
